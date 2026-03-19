@@ -18,24 +18,35 @@ class LumiBottomBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.lumiColors;
     final insets = context.lumiInsets;
+    final shapes = context.lumiShapes;
 
     return SafeArea(
       top: false,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: colors.surfacePrimary,
-          border: Border(top: BorderSide(color: colors.borderSecondary)),
-        ),
-        child: Padding(
-          padding: insets.bottomBarPadding,
-          child: Row(
-            children: [
-              Expanded(
-                child: Align(
-                  alignment: Alignment.centerLeft,
+      minimum: EdgeInsets.fromLTRB(
+        insets.screenHorizontal,
+        insets.clusterGap,
+        insets.screenHorizontal,
+        insets.clusterGap,
+      ),
+      child: Padding(
+        padding: EdgeInsets.only(top: insets.clusterGap),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.surfaceTertiary,
+            borderRadius: shapes.bar,
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: insets.clusterGap,
+              vertical: insets.clusterGap,
+            ),
+            child: Row(
+              children: [
+                Expanded(
                   child: Wrap(
                     spacing: insets.clusterGap,
                     runSpacing: insets.clusterGap,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       _NavigationItem(
                         key: const Key('bottom-bar-inbox'),
@@ -47,34 +58,29 @@ class LumiBottomBar extends StatelessWidget {
                       _NavigationItem(
                         key: const Key('bottom-bar-projects'),
                         icon: CupertinoIcons.square_grid_2x2_fill,
-                        label: 'Projects',
+                        label: 'Project',
                         selected: _isProjectsSelected,
                         onTap: () => context.go(ProjectsPage.routePath),
                       ),
                     ],
                   ),
                 ),
-              ),
-              Expanded(
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: Wrap(
-                    spacing: insets.clusterGap,
-                    runSpacing: insets.clusterGap,
-                    children: const [
-                      _ActionItem(
-                        icon: CupertinoIcons.plus_circle_fill,
-                        label: 'Add Text Task',
-                      ),
-                      _ActionItem(
-                        icon: CupertinoIcons.mic_fill,
-                        label: 'Add Voice Task',
-                      ),
-                    ],
-                  ),
+                Wrap(
+                  spacing: insets.clusterGap,
+                  runSpacing: insets.clusterGap,
+                  children: const [
+                    _ActionItem(
+                      icon: CupertinoIcons.add,
+                      label: 'Add Text Task',
+                    ),
+                    _ActionItem(
+                      icon: CupertinoIcons.mic_fill,
+                      label: 'Add Voice Task',
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -104,24 +110,21 @@ class _NavigationItem extends StatelessWidget {
     final textTheme = context.lumiTextTheme;
 
     final foregroundColor = selected
-        ? colors.contentPrimary
+        ? colors.contentInverse
         : colors.contentSecondary;
-    final backgroundColor = selected
-        ? colors.surfaceSecondary
-        : colors.surfaceGhost;
-    final borderColor = selected ? colors.borderPrimary : colors.borderTertiary;
 
     return Material(
       type: MaterialType.transparency,
       child: InkWell(
         borderRadius: shapes.pill,
         onTap: onTap,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOut,
           padding: insets.pillPadding,
           decoration: BoxDecoration(
-            color: backgroundColor,
+            color: selected ? colors.surfaceInverse : colors.surfaceGhost,
             borderRadius: shapes.pill,
-            border: Border.all(color: borderColor),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -151,25 +154,16 @@ class _ActionItem extends StatelessWidget {
     final colors = context.lumiColors;
     final insets = context.lumiInsets;
     final shapes = context.lumiShapes;
-    final textTheme = context.lumiTextTheme;
 
-    return Container(
-      padding: insets.pillPadding,
-      decoration: BoxDecoration(
-        color: colors.surfaceSecondary,
-        borderRadius: shapes.pill,
-        border: Border.all(color: colors.borderSecondary),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: colors.contentPrimary),
-          SizedBox(width: insets.itemGap),
-          Text(
-            label,
-            style: textTheme.labelLarge?.copyWith(color: colors.contentPrimary),
-          ),
-        ],
+    return Tooltip(
+      message: label,
+      child: Container(
+        padding: insets.pillPadding,
+        decoration: BoxDecoration(
+          color: colors.surfaceInverse,
+          borderRadius: shapes.pill,
+        ),
+        child: Icon(icon, color: colors.contentInverse),
       ),
     );
   }
