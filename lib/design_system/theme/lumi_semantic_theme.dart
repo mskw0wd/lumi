@@ -27,6 +27,7 @@ class LumiSemanticTheme {
         contentTertiary: tokens.text.tertiary,
         contentInverse: tokens.text.inverse,
         contentDisabled: tokens.text.disabled,
+        scrim: tokens.border.ghost,
         borderPrimary: tokens.border.primary,
         borderSecondary: tokens.border.secondary,
         borderTertiary: tokens.border.tertiary,
@@ -47,6 +48,8 @@ class LumiSemanticTheme {
         pillHorizontal: LumiSpacingTokens.space5,
         pillVertical: LumiSpacingTokens.space4,
         barVertical: LumiSpacingTokens.space6,
+        controlMinHeight: LumiSpacingTokens.space11,
+        iconSize: LumiSpacingTokens.space9,
       ),
       shapes: const LumiShapes(
         panel: BorderRadius.all(Radius.circular(LumiRadiusTokens.mobileL)),
@@ -75,6 +78,7 @@ class LumiColors extends ThemeExtension<LumiColors> {
     required this.contentTertiary,
     required this.contentInverse,
     required this.contentDisabled,
+    required this.scrim,
     required this.borderPrimary,
     required this.borderSecondary,
     required this.borderTertiary,
@@ -96,6 +100,7 @@ class LumiColors extends ThemeExtension<LumiColors> {
   final Color contentTertiary;
   final Color contentInverse;
   final Color contentDisabled;
+  final Color scrim;
   final Color borderPrimary;
   final Color borderSecondary;
   final Color borderTertiary;
@@ -118,6 +123,7 @@ class LumiColors extends ThemeExtension<LumiColors> {
     Color? contentTertiary,
     Color? contentInverse,
     Color? contentDisabled,
+    Color? scrim,
     Color? borderPrimary,
     Color? borderSecondary,
     Color? borderTertiary,
@@ -139,6 +145,7 @@ class LumiColors extends ThemeExtension<LumiColors> {
       contentTertiary: contentTertiary ?? this.contentTertiary,
       contentInverse: contentInverse ?? this.contentInverse,
       contentDisabled: contentDisabled ?? this.contentDisabled,
+      scrim: scrim ?? this.scrim,
       borderPrimary: borderPrimary ?? this.borderPrimary,
       borderSecondary: borderSecondary ?? this.borderSecondary,
       borderTertiary: borderTertiary ?? this.borderTertiary,
@@ -176,6 +183,7 @@ class LumiColors extends ThemeExtension<LumiColors> {
       contentTertiary: Color.lerp(contentTertiary, other.contentTertiary, t)!,
       contentInverse: Color.lerp(contentInverse, other.contentInverse, t)!,
       contentDisabled: Color.lerp(contentDisabled, other.contentDisabled, t)!,
+      scrim: Color.lerp(scrim, other.scrim, t)!,
       borderPrimary: Color.lerp(borderPrimary, other.borderPrimary, t)!,
       borderSecondary: Color.lerp(borderSecondary, other.borderSecondary, t)!,
       borderTertiary: Color.lerp(borderTertiary, other.borderTertiary, t)!,
@@ -201,6 +209,8 @@ class LumiInsets extends ThemeExtension<LumiInsets> {
     required this.pillHorizontal,
     required this.pillVertical,
     required this.barVertical,
+    required this.controlMinHeight,
+    required this.iconSize,
   });
 
   final double screenHorizontal;
@@ -213,6 +223,8 @@ class LumiInsets extends ThemeExtension<LumiInsets> {
   final double pillHorizontal;
   final double pillVertical;
   final double barVertical;
+  final double controlMinHeight;
+  final double iconSize;
 
   EdgeInsets get pagePadding => EdgeInsets.fromLTRB(
     screenHorizontal,
@@ -245,6 +257,8 @@ class LumiInsets extends ThemeExtension<LumiInsets> {
     double? pillHorizontal,
     double? pillVertical,
     double? barVertical,
+    double? controlMinHeight,
+    double? iconSize,
   }) {
     return LumiInsets(
       screenHorizontal: screenHorizontal ?? this.screenHorizontal,
@@ -257,6 +271,8 @@ class LumiInsets extends ThemeExtension<LumiInsets> {
       pillHorizontal: pillHorizontal ?? this.pillHorizontal,
       pillVertical: pillVertical ?? this.pillVertical,
       barVertical: barVertical ?? this.barVertical,
+      controlMinHeight: controlMinHeight ?? this.controlMinHeight,
+      iconSize: iconSize ?? this.iconSize,
     );
   }
 
@@ -285,6 +301,12 @@ class LumiInsets extends ThemeExtension<LumiInsets> {
       pillHorizontal: lerpDouble(pillHorizontal, other.pillHorizontal, t)!,
       pillVertical: lerpDouble(pillVertical, other.pillVertical, t)!,
       barVertical: lerpDouble(barVertical, other.barVertical, t)!,
+      controlMinHeight: lerpDouble(
+        controlMinHeight,
+        other.controlMinHeight,
+        t,
+      )!,
+      iconSize: lerpDouble(iconSize, other.iconSize, t)!,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:lumi/app/overlays/app_overlay_host.dart';
 import 'package:lumi/app/shell/lumi_bottom_bar.dart';
-import 'package:lumi/design_system/theme/lumi_theme_extensions.dart';
+import 'package:lumi/design_system/primitives/lumi_app_scaffold.dart';
 
 class LumiAppShell extends StatelessWidget {
   const LumiAppShell({
@@ -14,11 +15,10 @@ class LumiAppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.lumiColors;
-
-    return Scaffold(
-      body: ColoredBox(color: colors.appBackground, child: child),
-      bottomNavigationBar: LumiBottomBar(currentLocation: currentLocation),
+    return LumiAppScaffold(
+      body: child,
+      bottomBar: LumiBottomBar(currentLocation: currentLocation),
+      overlay: const AppOverlayHost(),
     );
   }
 }
