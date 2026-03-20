@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-enum AppOverlayKind { quickAdd, calendar, voice }
+enum AppOverlayKind { quickAdd, calendar, projectPicker, voice }
 
 @immutable
 class AppOverlayEntry {
@@ -25,6 +25,10 @@ class AppOverlayController extends Notifier<AppOverlayEntry?> {
 
   void showCalendar() {
     state = const AppOverlayEntry(kind: AppOverlayKind.calendar);
+  }
+
+  void showProjectPicker() {
+    state = const AppOverlayEntry(kind: AppOverlayKind.projectPicker);
   }
 
   void showVoice() {

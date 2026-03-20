@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lumi/design_system/theme/lumi_theme_extensions.dart';
+import 'package:lumi/design_system/tokens/lumi_typography_tokens.dart';
+
+enum LumiTextFieldVariant { standard, composer }
 
 class LumiTextField extends StatelessWidget {
   const LumiTextField({
@@ -13,6 +16,7 @@ class LumiTextField extends StatelessWidget {
     this.textInputAction,
     this.onSubmitted,
     this.enabled = true,
+    this.variant = LumiTextFieldVariant.standard,
   });
 
   final TextEditingController? controller;
@@ -24,6 +28,7 @@ class LumiTextField extends StatelessWidget {
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onSubmitted;
   final bool enabled;
+  final LumiTextFieldVariant variant;
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +36,25 @@ class LumiTextField extends StatelessWidget {
     final insets = context.lumiInsets;
     final shapes = context.lumiShapes;
     final textTheme = context.lumiTextTheme;
+    final isComposer = variant == LumiTextFieldVariant.composer;
+    final fillColor = isComposer
+        ? colors.surfaceGhost
+        : colors.surfaceSecondary;
+    final enabledBorderColor = colors.borderTertiary;
+    final focusedBorderColor = isComposer
+        ? colors.borderTertiary
+        : colors.borderPrimary;
+    final verticalPadding = isComposer ? 0.0 : insets.pillVertical;
+    final horizontalPadding = isComposer ? 0.0 : insets.cardPaddingValue;
+    final composerBorder = InputBorder.none;
+    final outlinedBorder = OutlineInputBorder(
+      borderRadius: shapes.panel,
+      borderSide: BorderSide(color: enabledBorderColor),
+    );
+    final focusedOutlinedBorder = OutlineInputBorder(
+      borderRadius: shapes.panel,
+      borderSide: BorderSide(color: focusedBorderColor),
+    );
 
     return TextField(
       controller: controller,
@@ -41,29 +65,33 @@ class LumiTextField extends StatelessWidget {
       textInputAction: textInputAction,
       onSubmitted: onSubmitted,
       enabled: enabled,
-      style: textTheme.bodyLarge?.copyWith(color: colors.contentPrimary),
+      style: isComposer
+          ? textTheme.bodyMedium?.copyWith(
+              color: colors.contentPrimary,
+              fontWeight: LumiTypographyTokens.medium,
+            )
+          : textTheme.bodyLarge?.copyWith(color: colors.contentPrimary),
       cursorColor: colors.contentPrimary,
       decoration: InputDecoration(
+        isDense: true,
         hintText: hintText,
-        hintStyle: textTheme.bodyLarge?.copyWith(color: colors.contentTertiary),
-        filled: true,
-        fillColor: colors.surfaceSecondary,
+        hintStyle: (isComposer ? textTheme.bodyMedium : textTheme.bodyLarge)
+            ?.copyWith(
+              color: colors.contentTertiary,
+              fontWeight: isComposer
+                  ? LumiTypographyTokens.medium
+                  : LumiTypographyTokens.regular,
+            ),
+        filled: !isComposer,
+        fillColor: fillColor,
         contentPadding: EdgeInsets.symmetric(
-          horizontal: insets.cardPaddingValue,
-          vertical: insets.pillVertical,
+          horizontal: horizontalPadding,
+          vertical: verticalPadding,
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: shapes.panel,
-          borderSide: BorderSide(color: colors.borderTertiary),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: shapes.panel,
-          borderSide: BorderSide(color: colors.borderPrimary),
-        ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: shapes.panel,
-          borderSide: BorderSide(color: colors.borderTertiary),
-        ),
+        border: isComposer ? composerBorder : outlinedBorder,
+        enabledBorder: isComposer ? composerBorder : outlinedBorder,
+        focusedBorder: isComposer ? composerBorder : focusedOutlinedBorder,
+        disabledBorder: isComposer ? composerBorder : outlinedBorder,
       ),
     );
   }

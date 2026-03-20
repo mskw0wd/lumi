@@ -8,6 +8,7 @@ import 'package:lumi/design_system/primitives/lumi_icon_button.dart';
 import 'package:lumi/design_system/primitives/lumi_primary_button.dart';
 import 'package:lumi/design_system/primitives/lumi_text.dart';
 import 'package:lumi/design_system/theme/lumi_theme_extensions.dart';
+import 'package:lumi/features/quick_add/presentation/quick_add_composer.dart';
 
 class AppOverlayHost extends ConsumerWidget {
   const AppOverlayHost({super.key});
@@ -79,17 +80,14 @@ class _OverlayStage extends ConsumerWidget {
 
     return switch (entry.kind) {
       AppOverlayKind.quickAdd => LumiComposerContainer(
-        child: _OverlayPlaceholderContent(
-          title: 'Quick add foundation',
-          message:
-              'Composer host is ready. Task input behavior lands in the next step.',
-          icon: CupertinoIcons.add,
+        child: QuickAddComposer(
           onDismiss: controller.dismiss,
-          trailing: LumiIconButton(
-            icon: CupertinoIcons.xmark,
-            tooltip: 'Dismiss quick add',
-            onPressed: controller.dismiss,
-          ),
+          onProjectTap: controller.showProjectPicker,
+          onTodayTap: controller.showCalendar,
+          onSubmit: (value) {
+            debugPrint('Quick add submit: $value');
+            controller.dismiss();
+          },
         ),
       ),
       AppOverlayKind.calendar => LumiSheetContainer(
@@ -102,6 +100,20 @@ class _OverlayStage extends ConsumerWidget {
           trailing: LumiIconButton(
             icon: CupertinoIcons.xmark,
             tooltip: 'Dismiss calendar',
+            onPressed: controller.dismiss,
+          ),
+        ),
+      ),
+      AppOverlayKind.projectPicker => LumiSheetContainer(
+        child: _OverlayPlaceholderContent(
+          title: 'Project picker foundation',
+          message:
+              'Project picker host is wired. Actual project list lands in the next step.',
+          icon: CupertinoIcons.folder,
+          onDismiss: controller.dismiss,
+          trailing: LumiIconButton(
+            icon: CupertinoIcons.xmark,
+            tooltip: 'Dismiss project picker',
             onPressed: controller.dismiss,
           ),
         ),
