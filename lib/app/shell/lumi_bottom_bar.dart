@@ -28,10 +28,7 @@ class LumiBottomBar extends ConsumerWidget {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.appBackground,
-        border: Border(top: BorderSide(color: colors.scrim)),
-      ),
+      decoration: BoxDecoration(color: colors.appBackground),
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           insets.screenHorizontal,

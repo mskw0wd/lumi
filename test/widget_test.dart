@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lumi/app/app.dart';
@@ -108,5 +108,141 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Calendar foundation'), findsOneWidget);
+  });
+
+  testWidgets(
+    'toggling inbox task updates source of truth and focus spaces counters',
+    (WidgetTester tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await tester.pumpWidget(const ProviderScope(child: LumiApp()));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining('7 tasks', findRichText: true),
+          findsOneWidget,
+        );
+
+        final onboardingCheckbox = find.byKey(
+          const Key('inbox-task-checkbox-icvr-onboarding'),
+        );
+
+        await tester.ensureVisible(onboardingCheckbox);
+        await tester.pumpAndSettle();
+        await tester.tap(onboardingCheckbox);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.descendant(
+            of: onboardingCheckbox,
+            matching: find.byIcon(Icons.check_rounded),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining('6 tasks', findRichText: true),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byKey(const Key('bottom-bar-projects')));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('space-progress-icvr')), findsOneWidget);
+        expect(
+          tester
+              .getSemantics(find.byKey(const Key('space-progress-icvr')))
+              .value,
+          '2/3',
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('space-open-count-icvr')),
+            matching: find.text('1'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('space-due-today-count-icvr')),
+            matching: find.text('0'),
+          ),
+          findsOneWidget,
+        );
+      } finally {
+        semantics.dispose();
+      }
+    },
+  );
+
+  testWidgets('completing overdue task removes overdue block', (
+    WidgetTester tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      await tester.pumpWidget(const ProviderScope(child: LumiApp()));
+      await tester.pumpAndSettle();
+
+      final overdueCheckbox = find.byKey(
+        const Key('inbox-task-checkbox-icvr-demo-notes'),
+      );
+      await tester.ensureVisible(overdueCheckbox);
+      await tester.pumpAndSettle();
+      await tester.tap(overdueCheckbox);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('bottom-bar-projects')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('space-progress-icvr')), findsOneWidget);
+      expect(
+        tester.getSemantics(find.byKey(const Key('space-progress-icvr'))).value,
+        '2/3',
+      );
+      expect(find.byKey(const Key('space-overdue-icvr')), findsNothing);
+    } finally {
+      semantics.dispose();
+    }
+  });
+
+  testWidgets('uncompleting task restores focus spaces progress', (
+    WidgetTester tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      await tester.pumpWidget(const ProviderScope(child: LumiApp()));
+      await tester.pumpAndSettle();
+
+      final onboardingCheckbox = find.byKey(
+        const Key('inbox-task-checkbox-icvr-onboarding'),
+      );
+      await tester.ensureVisible(onboardingCheckbox);
+      await tester.pumpAndSettle();
+      await tester.tap(onboardingCheckbox);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('bottom-bar-projects')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('space-progress-icvr')), findsOneWidget);
+      expect(
+        tester.getSemantics(find.byKey(const Key('space-progress-icvr'))).value,
+        '2/3',
+      );
+
+      await tester.tap(find.byKey(const Key('bottom-bar-inbox')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(onboardingCheckbox);
+      await tester.pumpAndSettle();
+      await tester.tap(onboardingCheckbox);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('bottom-bar-projects')));
+      await tester.pumpAndSettle();
+      expect(
+        tester.getSemantics(find.byKey(const Key('space-progress-icvr'))).value,
+        '1/3',
+      );
+    } finally {
+      semantics.dispose();
+    }
   });
 }

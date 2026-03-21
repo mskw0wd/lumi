@@ -1,0 +1,394 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+final lumiTasksProvider = NotifierProvider<LumiTaskStore, List<LumiTask>>(
+  LumiTaskStore.new,
+);
+
+final lumiSpacesProvider = Provider<List<LumiSpace>>((ref) => _demoSpaces);
+
+final lumiSpacesByIdProvider = Provider<Map<String, LumiSpace>>((ref) {
+  final spaces = ref.watch(lumiSpacesProvider);
+  return {for (final space in spaces) space.id: space};
+});
+
+final lumiFocusDateProvider = Provider<DateTime>((ref) {
+  return DateTime(2026, 3, 16);
+});
+
+final inboxTaskItemsProvider = Provider<List<LumiInboxTaskItem>>((ref) {
+  final tasks = ref.watch(lumiTasksProvider);
+  final spacesById = ref.watch(lumiSpacesByIdProvider);
+
+  return tasks
+      .map(
+        (task) => LumiInboxTaskItem(
+          id: task.id,
+          title: task.title,
+          subtitle: task.projectId == null
+              ? 'Inbox'
+              : spacesById[task.projectId]?.name ?? 'Inbox',
+          isCompleted: task.isCompleted,
+        ),
+      )
+      .toList(growable: false);
+});
+
+final inboxFocusCountProvider = Provider<int>((ref) {
+  final tasks = ref.watch(lumiTasksProvider);
+  final focusDate = ref.watch(lumiFocusDateProvider);
+
+  return tasks.where((task) => _isDueToday(task, focusDate)).length;
+});
+
+final lumiSpaceSummariesProvider = Provider<List<LumiSpaceSummary>>((ref) {
+  final spaces = ref.watch(lumiSpacesProvider);
+  final tasks = ref.watch(lumiTasksProvider);
+  final focusDate = ref.watch(lumiFocusDateProvider);
+
+  return spaces
+      .map((space) {
+        final spaceTasks = tasks
+            .where((task) => task.projectId == space.id)
+            .toList(growable: false);
+        final totalTasks = spaceTasks.length;
+        final completedTasks = spaceTasks
+            .where((task) => task.isCompleted)
+            .length;
+        final openTasks = spaceTasks.where((task) => !task.isCompleted).length;
+        final dueTodayTasks = spaceTasks
+            .where((task) => _isDueToday(task, focusDate))
+            .length;
+        final overdueTasks = spaceTasks
+            .where((task) => _isOverdue(task, focusDate))
+            .length;
+
+        return LumiSpaceSummary(
+          id: space.id,
+          name: space.name,
+          isPinned: space.isPinned,
+          totalTasks: totalTasks,
+          completedTasks: completedTasks,
+          openTasks: openTasks,
+          dueTodayTasks: dueTodayTasks,
+          overdueTasks: overdueTasks,
+        );
+      })
+      .toList(growable: false);
+});
+
+final focusSpacesHeroStatsProvider = Provider<FocusSpacesHeroStats>((ref) {
+  final summaries = ref.watch(lumiSpaceSummariesProvider);
+  final totalTasks = summaries.fold<int>(
+    0,
+    (sum, summary) => sum + summary.totalTasks,
+  );
+  final spacesNeedingAttention = summaries
+      .where((summary) => summary.dueTodayTasks > 0 || summary.overdueTasks > 0)
+      .length;
+
+  return FocusSpacesHeroStats(
+    totalTasks: totalTasks,
+    spacesNeedingAttention: spacesNeedingAttention,
+  );
+});
+
+class LumiTaskStore extends Notifier<List<LumiTask>> {
+  @override
+  List<LumiTask> build() => _buildDemoTasks();
+
+  void toggleCompletion(String taskId) {
+    final now = DateTime.now();
+    state = [
+      for (final task in state)
+        if (task.id == taskId)
+          task.copyWith(
+            isCompleted: !task.isCompleted,
+            completedAt: task.isCompleted ? null : now,
+          )
+        else
+          task,
+    ];
+  }
+}
+
+class LumiTask {
+  const LumiTask({
+    required this.id,
+    required this.title,
+    required this.isCompleted,
+    required this.projectId,
+    required this.dueDate,
+    required this.createdAt,
+    required this.completedAt,
+  });
+
+  final String id;
+  final String title;
+  final bool isCompleted;
+  final String? projectId;
+  final DateTime? dueDate;
+  final DateTime createdAt;
+  final DateTime? completedAt;
+
+  LumiTask copyWith({
+    String? id,
+    String? title,
+    bool? isCompleted,
+    Object? projectId = _sentinel,
+    Object? dueDate = _sentinel,
+    DateTime? createdAt,
+    Object? completedAt = _sentinel,
+  }) {
+    return LumiTask(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      isCompleted: isCompleted ?? this.isCompleted,
+      projectId: identical(projectId, _sentinel)
+          ? this.projectId
+          : projectId as String?,
+      dueDate: identical(dueDate, _sentinel)
+          ? this.dueDate
+          : dueDate as DateTime?,
+      createdAt: createdAt ?? this.createdAt,
+      completedAt: identical(completedAt, _sentinel)
+          ? this.completedAt
+          : completedAt as DateTime?,
+    );
+  }
+}
+
+class LumiSpace {
+  const LumiSpace({
+    required this.id,
+    required this.name,
+    required this.isPinned,
+  });
+
+  final String id;
+  final String name;
+  final bool isPinned;
+}
+
+class LumiSpaceSummary {
+  const LumiSpaceSummary({
+    required this.id,
+    required this.name,
+    required this.isPinned,
+    required this.totalTasks,
+    required this.completedTasks,
+    required this.openTasks,
+    required this.dueTodayTasks,
+    required this.overdueTasks,
+  });
+
+  final String id;
+  final String name;
+  final bool isPinned;
+  final int totalTasks;
+  final int completedTasks;
+  final int openTasks;
+  final int dueTodayTasks;
+  final int overdueTasks;
+}
+
+class FocusSpacesHeroStats {
+  const FocusSpacesHeroStats({
+    required this.totalTasks,
+    required this.spacesNeedingAttention,
+  });
+
+  final int totalTasks;
+  final int spacesNeedingAttention;
+}
+
+class LumiInboxTaskItem {
+  const LumiInboxTaskItem({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.isCompleted,
+  });
+
+  final String id;
+  final String title;
+  final String subtitle;
+  final bool isCompleted;
+}
+
+const _demoSpaces = <LumiSpace>[
+  LumiSpace(id: 'icvr', name: 'ICVR', isPinned: true),
+  LumiSpace(id: 'lumi', name: 'Lumi', isPinned: true),
+  LumiSpace(id: 'coinask', name: 'Coinask', isPinned: false),
+  LumiSpace(id: 'project-name', name: 'Project name', isPinned: true),
+  LumiSpace(id: 'fatra', name: 'Fatra', isPinned: false),
+];
+
+const _sentinel = Object();
+
+List<LumiTask> _buildDemoTasks() {
+  final focusDate = DateTime(2026, 3, 16);
+
+  return [
+    LumiTask(
+      id: 'icvr-onboarding',
+      title: 'Refine onboarding flow',
+      isCompleted: false,
+      projectId: 'icvr',
+      dueDate: focusDate,
+      createdAt: DateTime(2026, 3, 10, 9),
+      completedAt: null,
+    ),
+    LumiTask(
+      id: 'coinask-empty-states',
+      title: 'Sync with design on empty states',
+      isCompleted: false,
+      projectId: 'coinask',
+      dueDate: focusDate,
+      createdAt: DateTime(2026, 3, 10, 11),
+      completedAt: null,
+    ),
+    LumiTask(
+      id: 'inbox-api-pagination',
+      title: 'Review API pagination edge cases',
+      isCompleted: false,
+      projectId: null,
+      dueDate: focusDate,
+      createdAt: DateTime(2026, 3, 11, 10),
+      completedAt: null,
+    ),
+    LumiTask(
+      id: 'icvr-demo-notes',
+      title: 'Prepare sprint demo notes',
+      isCompleted: false,
+      projectId: 'icvr',
+      dueDate: DateTime(2026, 3, 14),
+      createdAt: DateTime(2026, 3, 11, 16),
+      completedAt: null,
+    ),
+    LumiTask(
+      id: 'lumi-qa-checklist',
+      title: 'Update QA checklist for release',
+      isCompleted: false,
+      projectId: 'lumi',
+      dueDate: focusDate,
+      createdAt: DateTime(2026, 3, 12, 9),
+      completedAt: null,
+    ),
+    LumiTask(
+      id: 'coinask-timezone',
+      title: 'Fix calendar timezone mismatch',
+      isCompleted: false,
+      projectId: 'coinask',
+      dueDate: DateTime(2026, 3, 15),
+      createdAt: DateTime(2026, 3, 12, 14),
+      completedAt: null,
+    ),
+    LumiTask(
+      id: 'inbox-priorities',
+      title: 'Plan priorities for tomorrow',
+      isCompleted: false,
+      projectId: null,
+      dueDate: focusDate,
+      createdAt: DateTime(2026, 3, 12, 18),
+      completedAt: null,
+    ),
+    LumiTask(
+      id: 'project-header-transition',
+      title: 'Polish compact header transition',
+      isCompleted: false,
+      projectId: 'project-name',
+      dueDate: null,
+      createdAt: DateTime(2026, 3, 13, 10),
+      completedAt: null,
+    ),
+    LumiTask(
+      id: 'lumi-notification-permission',
+      title: 'Review notification permission UX',
+      isCompleted: true,
+      projectId: 'lumi',
+      dueDate: focusDate,
+      createdAt: DateTime(2026, 3, 13, 12),
+      completedAt: DateTime(2026, 3, 14, 9, 30),
+    ),
+    LumiTask(
+      id: 'fatra-empty-copy',
+      title: 'Clean empty-state copy variants',
+      isCompleted: false,
+      projectId: 'fatra',
+      dueDate: null,
+      createdAt: DateTime(2026, 3, 13, 15),
+      completedAt: null,
+    ),
+    LumiTask(
+      id: 'inbox-keyboard-motion',
+      title: 'Verify keyboard attachment motion',
+      isCompleted: false,
+      projectId: null,
+      dueDate: focusDate,
+      createdAt: DateTime(2026, 3, 14, 9),
+      completedAt: null,
+    ),
+    LumiTask(
+      id: 'icvr-onboarding-success',
+      title: 'Update onboarding success messaging',
+      isCompleted: true,
+      projectId: 'icvr',
+      dueDate: null,
+      createdAt: DateTime(2026, 3, 14, 12),
+      completedAt: DateTime(2026, 3, 15, 11),
+    ),
+    LumiTask(
+      id: 'project-chip-sync',
+      title: 'Sync project chips with latest tokens',
+      isCompleted: true,
+      projectId: 'project-name',
+      dueDate: null,
+      createdAt: DateTime(2026, 3, 14, 17),
+      completedAt: DateTime(2026, 3, 15, 14),
+    ),
+    LumiTask(
+      id: 'inbox-release-notes',
+      title: 'Prepare release note structure',
+      isCompleted: false,
+      projectId: null,
+      dueDate: focusDate,
+      createdAt: DateTime(2026, 3, 15, 10),
+      completedAt: null,
+    ),
+    LumiTask(
+      id: 'fatra-today-rhythm',
+      title: 'Validate Today header rhythm',
+      isCompleted: true,
+      projectId: 'fatra',
+      dueDate: null,
+      createdAt: DateTime(2026, 3, 15, 16),
+      completedAt: DateTime(2026, 3, 15, 18, 20),
+    ),
+  ];
+}
+
+bool _isDueToday(LumiTask task, DateTime focusDate) {
+  if (task.isCompleted || task.dueDate == null) {
+    return false;
+  }
+
+  return _isSameDay(task.dueDate!, focusDate);
+}
+
+bool _isOverdue(LumiTask task, DateTime focusDate) {
+  if (task.isCompleted || task.dueDate == null) {
+    return false;
+  }
+
+  return _dateOnly(task.dueDate!).isBefore(_dateOnly(focusDate));
+}
+
+bool _isSameDay(DateTime left, DateTime right) {
+  return left.year == right.year &&
+      left.month == right.month &&
+      left.day == right.day;
+}
+
+DateTime _dateOnly(DateTime value) {
+  return DateTime(value.year, value.month, value.day);
+}

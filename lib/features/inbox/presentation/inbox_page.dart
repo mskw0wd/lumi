@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lumi/app/overlays/app_overlay_controller.dart';
+import 'package:lumi/features/tasks/application/lumi_task_store.dart';
 import 'package:lumi/design_system/theme/lumi_theme_extensions.dart';
 import 'package:lumi/design_system/tokens/lumi_spacing_tokens.dart';
 import 'package:lumi/design_system/tokens/lumi_typography_tokens.dart';
@@ -47,7 +48,9 @@ class _InboxPageState extends ConsumerState<_InboxPageBody> {
     final colors = context.lumiColors;
     final insets = context.lumiInsets;
     final textTheme = context.lumiTextTheme;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
     final overlayController = ref.read(appOverlayControllerProvider.notifier);
+    final focusCount = ref.watch(inboxFocusCountProvider);
     const relativeDateLabel = 'Today';
     const absoluteDateLabel = 'Tue, March 16';
     final largeDateStyle = textTheme.displayLarge?.copyWith(
@@ -87,6 +90,11 @@ class _InboxPageState extends ConsumerState<_InboxPageBody> {
             compactDateStyle,
             stickyHeaderProgress,
           );
+          final footerClearance =
+              44 +
+              (insets.cardPaddingValue * 2) +
+              bottomInset +
+              LumiSpacingTokens.space5;
 
           return Stack(
             children: [
@@ -159,9 +167,15 @@ class _InboxPageState extends ConsumerState<_InboxPageBody> {
                             dateStyle: dateStyle,
                             onTap: overlayController.showCalendar,
                             collapseProgress: collapseProgress,
+                            focusCount: focusCount,
                           ),
                           SizedBox(height: listSpacing),
-                          Expanded(child: child!),
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.only(bottom: footerClearance),
+                              child: child!,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -176,28 +190,57 @@ class _InboxPageState extends ConsumerState<_InboxPageBody> {
   }
 }
 
-class _InboxPlaceholderRow extends StatelessWidget {
-  const _InboxPlaceholderRow({required this.title, required this.subtitle});
+class _InboxTaskRow extends StatelessWidget {
+  const _InboxTaskRow({required this.task, required this.onToggle});
 
-  final String title;
-  final String subtitle;
+  final LumiInboxTaskItem task;
+  final VoidCallback onToggle;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.lumiColors;
     final textTheme = context.lumiTextTheme;
+    final titleColor = task.isCompleted
+        ? colors.contentSecondary
+        : colors.contentPrimary;
+    final subtitleColor = task.isCompleted
+        ? colors.contentTertiary
+        : colors.contentSecondary;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: LumiSpacingTokens.space3),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(5),
-              border: Border.all(color: colors.borderTertiary, width: 1.25),
+          GestureDetector(
+            key: Key('inbox-task-checkbox-${task.id}'),
+            onTap: onToggle,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(5),
+                color: task.isCompleted
+                    ? colors.contentPrimary
+                    : Colors.transparent,
+                border: Border.all(
+                  color: task.isCompleted
+                      ? colors.contentPrimary
+                      : colors.borderTertiary,
+                  width: 1.25,
+                ),
+              ),
+              child: task.isCompleted
+                  ? Center(
+                      child: Icon(
+                        Icons.check_rounded,
+                        size: 14,
+                        color: colors.surfacePrimary,
+                      ),
+                    )
+                  : null,
             ),
           ),
           const SizedBox(width: LumiSpacingTokens.space7),
@@ -206,17 +249,21 @@ class _InboxPlaceholderRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  task.title,
                   style: textTheme.bodyMedium?.copyWith(
-                    color: colors.contentPrimary,
+                    color: titleColor,
                     fontWeight: LumiTypographyTokens.medium,
+                    decoration: task.isCompleted
+                        ? TextDecoration.lineThrough
+                        : TextDecoration.none,
+                    decorationColor: subtitleColor,
                   ),
                 ),
                 const SizedBox(height: LumiSpacingTokens.space2),
                 Text(
-                  subtitle,
+                  task.subtitle,
                   style: textTheme.bodySmall?.copyWith(
-                    color: colors.contentSecondary,
+                    color: subtitleColor,
                     fontWeight: LumiTypographyTokens.medium,
                   ),
                 ),
@@ -279,6 +326,7 @@ class _DateSummaryBlock extends StatelessWidget {
     required this.dateStyle,
     required this.onTap,
     required this.collapseProgress,
+    required this.focusCount,
   });
 
   final String relativeDateLabel;
@@ -286,6 +334,7 @@ class _DateSummaryBlock extends StatelessWidget {
   final TextStyle? dateStyle;
   final VoidCallback onTap;
   final double collapseProgress;
+  final int focusCount;
 
   @override
   Widget build(BuildContext context) {
@@ -295,6 +344,7 @@ class _DateSummaryBlock extends StatelessWidget {
     final summaryProgress = (collapseProgress / 0.85).clamp(0.0, 1.0);
     final summaryShift = lerpDouble(0, -2, summaryProgress)!;
     final summaryOpacity = lerpDouble(1, 0.74, summaryProgress)!;
+    final focusCountLabel = focusCount == 1 ? '1 task' : '$focusCount tasks';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -338,7 +388,7 @@ class _DateSummaryBlock extends StatelessWidget {
                   ),
                   children: [
                     TextSpan(
-                      text: '7 tasks',
+                      text: focusCountLabel,
                       style: textTheme.bodyMedium?.copyWith(
                         color: colors.contentPrimary,
                         fontWeight: LumiTypographyTokens.medium,
@@ -363,15 +413,17 @@ class _DateSummaryBlock extends StatelessWidget {
   }
 }
 
-class _TaskPreviewList extends StatelessWidget {
+class _TaskPreviewList extends ConsumerWidget {
   const _TaskPreviewList({required this.controller});
 
   final ScrollController controller;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.lumiColors;
     final shapes = context.lumiShapes;
+    final tasks = ref.watch(inboxTaskItemsProvider);
+    final taskStore = ref.read(lumiTasksProvider.notifier);
 
     return Container(
       width: double.infinity,
@@ -381,113 +433,20 @@ class _TaskPreviewList extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: colors.surfacePrimary,
-        borderRadius: shapes.panel.copyWith(
-          bottomLeft: Radius.zero,
-          bottomRight: Radius.zero,
-        ),
+        borderRadius: shapes.panel,
       ),
-      child: ListView(
+      child: ListView.builder(
         controller: controller,
         physics: const BouncingScrollPhysics(),
-        padding: EdgeInsets.zero,
-        children: const [
-          _InboxPlaceholderRow(
-            title: 'Refine onboarding flow',
-            subtitle: 'ICVR',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Sync with design on empty states',
-            subtitle: 'Coinask',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Review API pagination edge cases',
-            subtitle: 'LevelLegends',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Prepare sprint demo notes',
-            subtitle: 'ICVR',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Update QA checklist for release',
-            subtitle: 'Lumi',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Fix calendar timezone mismatch',
-            subtitle: 'Coinask',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Plan priorities for tomorrow',
-            subtitle: 'Fixes',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Prepare sprint demo notes',
-            subtitle: 'ICVR',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Update QA checklist for release',
-            subtitle: 'Lumi',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Review notification permission UX',
-            subtitle: 'Lumi',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Refine compact header transition',
-            subtitle: 'Inbox',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Polish calendar bottom sheet spacing',
-            subtitle: 'Fixes',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Audit icon asset states',
-            subtitle: 'Design',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Prepare voice entry edge cases',
-            subtitle: 'Voice',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Clean empty-state copy variants',
-            subtitle: 'Lumi',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Verify keyboard attachment motion',
-            subtitle: 'Composer',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Review date label compact state',
-            subtitle: 'Inbox',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Update onboarding success messaging',
-            subtitle: 'ICVR',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Sync project chips with latest tokens',
-            subtitle: 'Design',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Check footer safe-area behavior',
-            subtitle: 'Fixes',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Review avatar placeholder balance',
-            subtitle: 'Profile',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Prepare release note structure',
-            subtitle: 'Ops',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Polish list row spacing in dark mode',
-            subtitle: 'UI',
-          ),
-          _InboxPlaceholderRow(
-            title: 'Validate Today header rhythm',
-            subtitle: 'Inbox',
-          ),
-        ],
+        padding: const EdgeInsets.only(bottom: LumiSpacingTokens.space9),
+        itemCount: tasks.length,
+        itemBuilder: (context, index) {
+          final task = tasks[index];
+          return _InboxTaskRow(
+            task: task,
+            onToggle: () => taskStore.toggleCompletion(task.id),
+          );
+        },
       ),
     );
   }
