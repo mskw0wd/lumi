@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lumi/design_system/theme/lumi_theme_extensions.dart';
 import 'package:lumi/design_system/tokens/lumi_typography_tokens.dart';
 
+const _kComposerPlaceholderColor = Color(0xFF9E9E9E);
+
 enum LumiTextFieldVariant { standard, composer }
 
 class LumiTextField extends StatelessWidget {
@@ -77,7 +79,9 @@ class LumiTextField extends StatelessWidget {
         hintText: hintText,
         hintStyle: (isComposer ? textTheme.bodyMedium : textTheme.bodyLarge)
             ?.copyWith(
-              color: colors.contentTertiary,
+              color: isComposer
+                  ? _kComposerPlaceholderColor
+                  : colors.contentSecondary,
               fontWeight: isComposer
                   ? LumiTypographyTokens.medium
                   : LumiTypographyTokens.regular,

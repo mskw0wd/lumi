@@ -1,9 +1,14 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lumi/design_system/motion/lumi_motion.dart';
 import 'package:lumi/design_system/primitives/lumi_text_field.dart';
 import 'package:lumi/design_system/theme/lumi_theme_extensions.dart';
 import 'package:lumi/design_system/tokens/lumi_spacing_tokens.dart';
+
+const _kQuickAddChipBorderColor = Color(0xFFEBEBEB);
+const _kQuickAddFilledActionColor = Color(0xFFFD6116);
+const _kQuickAddEmptyActionIconColor = Color(0xFF868686);
+const _kQuickAddFilledActionIconColor = Color(0xFFFCFCFC);
 
 class QuickAddComposer extends StatefulWidget {
   const QuickAddComposer({
@@ -89,12 +94,12 @@ class _QuickAddComposerState extends State<QuickAddComposer> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: insets.controlMinHeight + insets.itemGap,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: LumiSpacingTokens.space5,
                 ),
                 child: LumiTextField(
                   key: const Key('quick-add-field'),
@@ -122,13 +127,13 @@ class _QuickAddComposerState extends State<QuickAddComposer> {
           children: [
             _QuickAddChip(
               onTap: widget.onProjectTap,
-              icon: CupertinoIcons.plus_square,
+              iconAssetPath: 'assets/icons/quick_add_project_chip.svg',
               label: 'Project',
             ),
             const SizedBox(width: LumiSpacingTokens.space3),
             _QuickAddChip(
               onTap: widget.onTodayTap,
-              icon: CupertinoIcons.calendar,
+              iconAssetPath: 'assets/icons/quick_add_today_chip.svg',
               label: 'Today',
             ),
           ],
@@ -141,12 +146,12 @@ class _QuickAddComposerState extends State<QuickAddComposer> {
 class _QuickAddChip extends StatelessWidget {
   const _QuickAddChip({
     required this.onTap,
-    required this.icon,
+    required this.iconAssetPath,
     required this.label,
   });
 
   final VoidCallback onTap;
-  final IconData icon;
+  final String iconAssetPath;
   final String label;
 
   @override
@@ -164,18 +169,18 @@ class _QuickAddChip extends StatelessWidget {
           height: 42,
           padding: const EdgeInsets.fromLTRB(
             LumiSpacingTokens.space7,
-            LumiSpacingTokens.space5,
+            LumiSpacingTokens.space3,
             LumiSpacingTokens.space8,
-            LumiSpacingTokens.space5,
+            LumiSpacingTokens.space3,
           ),
           decoration: BoxDecoration(
             borderRadius: shapes.pill,
-            border: Border.all(color: colors.borderSecondary),
+            border: Border.all(color: _kQuickAddChipBorderColor),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 18, color: colors.contentPrimary),
+              SvgPicture.asset(iconAssetPath, width: 18, height: 18),
               const SizedBox(width: LumiSpacingTokens.space3),
               Text(
                 label,
@@ -199,32 +204,58 @@ class _QuickAddSubmitButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.lumiColors;
-    final insets = context.lumiInsets;
-    final shapes = context.lumiShapes;
+    final motion = LumiMotion.tap;
 
     return Material(
       type: MaterialType.transparency,
       child: InkWell(
         key: const Key('quick-add-submit'),
-        borderRadius: shapes.pill,
+        borderRadius: BorderRadius.circular(22),
         onTap: onPressed,
         child: SizedBox(
-          width: insets.controlMinHeight + insets.itemGap,
-          height: insets.controlMinHeight + insets.itemGap,
+          width: 44,
+          height: 44,
           child: Center(
             child: AnimatedScale(
-              duration: LumiMotion.tap.duration,
-              curve: LumiMotion.tap.curve,
-              scale: enabled ? 1 : 0.94,
-              child: AnimatedOpacity(
-                duration: LumiMotion.tap.duration,
-                curve: LumiMotion.tap.curve,
-                opacity: enabled ? 1 : 0.35,
-                child: Icon(
-                  CupertinoIcons.add,
-                  size: insets.screenHorizontal,
-                  color: colors.contentPrimary,
+              duration: motion.duration,
+              curve: motion.curve,
+              scale: enabled ? 1 : 0.97,
+              child: AnimatedContainer(
+                duration: motion.duration,
+                curve: motion.curve,
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: enabled
+                      ? _kQuickAddFilledActionColor
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(enabled ? 22 : 16),
+                ),
+                child: TweenAnimationBuilder<Color?>(
+                  duration: motion.duration,
+                  curve: motion.curve,
+                  tween: ColorTween(
+                    end: enabled
+                        ? _kQuickAddFilledActionIconColor
+                        : _kQuickAddEmptyActionIconColor,
+                  ),
+                  builder: (context, iconColor, child) {
+                    return AnimatedOpacity(
+                      duration: motion.duration,
+                      curve: motion.curve,
+                      opacity: enabled ? 1 : 0.35,
+                      child: SvgPicture.asset(
+                        'assets/icons/quick_add_plus.svg',
+                        width: 16,
+                        height: 16,
+                        colorFilter: ColorFilter.mode(
+                          iconColor ?? _kQuickAddEmptyActionIconColor,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),

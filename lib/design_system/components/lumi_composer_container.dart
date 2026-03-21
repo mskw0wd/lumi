@@ -12,7 +12,6 @@ class LumiComposerContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.lumiColors;
     final insets = context.lumiInsets;
-    final shapes = context.lumiShapes;
     final viewInsets = MediaQuery.viewInsetsOf(context);
     final safePadding = MediaQuery.paddingOf(context);
     final footerClearance =
@@ -41,17 +40,15 @@ class LumiComposerContainer extends StatelessWidget {
             insets.screenHorizontal,
             insets.cardPaddingValue,
             insets.screenHorizontal,
-            LumiSpacingTokens.space12,
+            LumiSpacingTokens.space7,
           ),
           decoration: BoxDecoration(
             color: colors.surfacePrimary,
-            borderRadius: viewInsets.bottom > 0
-                ? BorderRadius.only(
-                    topLeft: Radius.circular(insets.cardPaddingValue),
-                    topRight: Radius.circular(insets.cardPaddingValue),
-                  )
-                : shapes.panel,
-            border: Border(top: BorderSide(color: colors.borderTertiary)),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(insets.cardPaddingValue),
+              topRight: Radius.circular(insets.cardPaddingValue),
+            ),
+            border: Border(top: BorderSide(color: colors.scrim)),
           ),
           child: child,
         ),

@@ -16,7 +16,7 @@ class LumiSemanticTheme {
   factory LumiSemanticTheme.fromTokens(LumiColorTokens tokens) {
     return LumiSemanticTheme(
       colors: LumiColors(
-        appBackground: tokens.background.primary,
+        appBackground: tokens.background.tertiary,
         surfacePrimary: tokens.background.primary,
         surfaceSecondary: tokens.background.secondary,
         surfaceTertiary: tokens.background.tertiary,
