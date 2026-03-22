@@ -73,10 +73,10 @@ class _QuickAddComposerState extends State<QuickAddComposer> {
     final text = value.trim();
 
     if (text.isEmpty) {
-      widget.onDismiss();
       return;
     }
 
+    _controller.clear();
     widget.onSubmit(text);
   }
 

@@ -9,6 +9,7 @@ import 'package:lumi/design_system/primitives/lumi_primary_button.dart';
 import 'package:lumi/design_system/primitives/lumi_text.dart';
 import 'package:lumi/design_system/theme/lumi_theme_extensions.dart';
 import 'package:lumi/features/quick_add/presentation/quick_add_composer.dart';
+import 'package:lumi/features/tasks/application/lumi_task_store.dart';
 
 class AppOverlayHost extends ConsumerWidget {
   const AppOverlayHost({super.key});
@@ -77,6 +78,8 @@ class _OverlayStage extends ConsumerWidget {
 
   Widget _buildContainer(BuildContext context, WidgetRef ref) {
     final controller = ref.read(appOverlayControllerProvider.notifier);
+    final taskStore = ref.read(lumiTasksProvider.notifier);
+    final focusDate = ref.read(lumiFocusDateProvider);
 
     return switch (entry.kind) {
       AppOverlayKind.quickAdd => LumiComposerContainer(
@@ -85,8 +88,10 @@ class _OverlayStage extends ConsumerWidget {
           onProjectTap: controller.showProjectPicker,
           onTodayTap: controller.showCalendar,
           onSubmit: (value) {
-            debugPrint('Quick add submit: $value');
-            controller.dismiss();
+            final task = taskStore.createTask(title: value, dueDate: focusDate);
+            if (task != null) {
+              controller.dismiss();
+            }
           },
         ),
       ),

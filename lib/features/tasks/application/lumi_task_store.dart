@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+const lumiGeneralSpaceId = 'general';
+const lumiGeneralSpaceName = 'General';
+
 final lumiTasksProvider = NotifierProvider<LumiTaskStore, List<LumiTask>>(
   LumiTaskStore.new,
 );
@@ -21,24 +24,19 @@ final inboxTaskItemsProvider = Provider<List<LumiInboxTaskItem>>((ref) {
 
   return tasks
       .where((task) => !task.isCompleted)
-      .map(
-        (task) => LumiInboxTaskItem(
+      .map((task) {
+        final resolvedSpaceId = _resolveSpaceId(task.projectId);
+        final resolvedSpaceName =
+            spacesById[resolvedSpaceId]?.name ?? lumiGeneralSpaceName;
+
+        return LumiInboxTaskItem(
           id: task.id,
           title: task.title,
-          subtitle: task.projectId == null
-              ? 'Inbox'
-              : spacesById[task.projectId]?.name ?? 'Inbox',
+          subtitle: resolvedSpaceName,
           isCompleted: task.isCompleted,
-        ),
-      )
+        );
+      })
       .toList(growable: false);
-});
-
-final inboxFocusCountProvider = Provider<int>((ref) {
-  final tasks = ref.watch(lumiTasksProvider);
-  final focusDate = ref.watch(lumiFocusDateProvider);
-
-  return tasks.where((task) => _isDueToday(task, focusDate)).length;
 });
 
 final lumiSpaceSummariesProvider = Provider<List<LumiSpaceSummary>>((ref) {
@@ -49,7 +47,7 @@ final lumiSpaceSummariesProvider = Provider<List<LumiSpaceSummary>>((ref) {
   return spaces
       .map((space) {
         final spaceTasks = tasks
-            .where((task) => task.projectId == space.id)
+            .where((task) => _resolveSpaceId(task.projectId) == space.id)
             .toList(growable: false);
         final totalTasks = spaceTasks.length;
         final completedTasks = spaceTasks
@@ -94,8 +92,13 @@ final focusSpacesHeroStatsProvider = Provider<FocusSpacesHeroStats>((ref) {
 });
 
 class LumiTaskStore extends Notifier<List<LumiTask>> {
+  int _createdTaskCount = 0;
+
   @override
-  List<LumiTask> build() => _buildDemoTasks();
+  List<LumiTask> build() {
+    _createdTaskCount = 0;
+    return _buildDemoTasks();
+  }
 
   void toggleCompletion(String taskId) {
     final now = DateTime.now();
@@ -109,6 +112,31 @@ class LumiTaskStore extends Notifier<List<LumiTask>> {
         else
           task,
     ];
+  }
+
+  LumiTask? createTask({
+    required String title,
+    String? projectId,
+    DateTime? dueDate,
+  }) {
+    final trimmedTitle = title.trim();
+    if (trimmedTitle.isEmpty) {
+      return null;
+    }
+
+    final now = DateTime.now();
+    final task = LumiTask(
+      id: 'task-${now.microsecondsSinceEpoch}-${_createdTaskCount++}',
+      title: trimmedTitle,
+      isCompleted: false,
+      projectId: _resolveSpaceId(projectId),
+      dueDate: dueDate,
+      createdAt: now,
+      completedAt: null,
+    );
+
+    state = [task, ...state];
+    return task;
   }
 }
 
@@ -217,6 +245,11 @@ class LumiInboxTaskItem {
 }
 
 const _demoSpaces = <LumiSpace>[
+  LumiSpace(
+    id: lumiGeneralSpaceId,
+    name: lumiGeneralSpaceName,
+    isPinned: false,
+  ),
   LumiSpace(id: 'icvr', name: 'ICVR', isPinned: true),
   LumiSpace(id: 'lumi', name: 'Lumi', isPinned: true),
   LumiSpace(id: 'coinask', name: 'Coinask', isPinned: false),
@@ -252,7 +285,7 @@ List<LumiTask> _buildDemoTasks() {
       id: 'inbox-api-pagination',
       title: 'Review API pagination edge cases',
       isCompleted: false,
-      projectId: null,
+      projectId: lumiGeneralSpaceId,
       dueDate: focusDate,
       createdAt: DateTime(2026, 3, 11, 10),
       completedAt: null,
@@ -288,7 +321,7 @@ List<LumiTask> _buildDemoTasks() {
       id: 'inbox-priorities',
       title: 'Plan priorities for tomorrow',
       isCompleted: false,
-      projectId: null,
+      projectId: lumiGeneralSpaceId,
       dueDate: focusDate,
       createdAt: DateTime(2026, 3, 12, 18),
       completedAt: null,
@@ -324,7 +357,7 @@ List<LumiTask> _buildDemoTasks() {
       id: 'inbox-keyboard-motion',
       title: 'Verify keyboard attachment motion',
       isCompleted: false,
-      projectId: null,
+      projectId: lumiGeneralSpaceId,
       dueDate: focusDate,
       createdAt: DateTime(2026, 3, 14, 9),
       completedAt: null,
@@ -351,7 +384,7 @@ List<LumiTask> _buildDemoTasks() {
       id: 'inbox-release-notes',
       title: 'Prepare release note structure',
       isCompleted: false,
-      projectId: null,
+      projectId: lumiGeneralSpaceId,
       dueDate: focusDate,
       createdAt: DateTime(2026, 3, 15, 10),
       completedAt: null,
@@ -366,6 +399,16 @@ List<LumiTask> _buildDemoTasks() {
       completedAt: DateTime(2026, 3, 15, 18, 20),
     ),
   ];
+}
+
+const _legacyDefaultSpaceIds = {'inbox', 'default', 'general-space'};
+
+String _resolveSpaceId(String? projectId) {
+  if (projectId == null || _legacyDefaultSpaceIds.contains(projectId)) {
+    return lumiGeneralSpaceId;
+  }
+
+  return projectId;
 }
 
 bool _isDueToday(LumiTask task, DateTime focusDate) {

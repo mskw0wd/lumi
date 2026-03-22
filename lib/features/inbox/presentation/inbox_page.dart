@@ -9,6 +9,8 @@ import 'package:lumi/design_system/theme/lumi_theme_extensions.dart';
 import 'package:lumi/design_system/tokens/lumi_spacing_tokens.dart';
 import 'package:lumi/design_system/tokens/lumi_typography_tokens.dart';
 
+const _inboxTaskCaptionSecondary = Color(0xFF9E9E9E);
+
 class InboxPage extends ConsumerWidget {
   const InboxPage({super.key});
 
@@ -52,7 +54,7 @@ class _InboxPageState extends ConsumerState<_InboxPageBody> {
     final overlayController = ref.read(appOverlayControllerProvider.notifier);
     final taskItems = ref.watch(inboxTaskItemsProvider);
     final taskStore = ref.read(lumiTasksProvider.notifier);
-    final focusCount = ref.watch(inboxFocusCountProvider);
+    final focusCount = taskItems.length;
     const relativeDateLabel = 'Today';
     const absoluteDateLabel = 'Tue, March 16';
     final largeDateStyle = textTheme.displayLarge?.copyWith(
@@ -209,7 +211,7 @@ class _InboxTaskRow extends StatelessWidget {
     final titleColor = task.isCompleted
         ? colors.contentSecondary
         : colors.contentPrimary;
-    final subtitleColor = colors.contentSecondary;
+    const subtitleColor = _inboxTaskCaptionSecondary;
 
     return Padding(
       key: Key('inbox-task-row-${task.id}'),
@@ -448,7 +450,7 @@ class _TaskPreviewList extends StatelessWidget {
       child: ListView.builder(
         controller: controller,
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: LumiSpacingTokens.space9),
+        padding: EdgeInsets.zero,
         itemCount: tasks.length,
         itemBuilder: (context, index) {
           final task = tasks[index];
