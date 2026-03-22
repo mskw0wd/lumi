@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lumi/app/app.dart';
+import 'package:lumi/features/tasks/application/lumi_task_store.dart';
 
 void main() {
   testWidgets('shell routes between inbox and projects', (
@@ -133,11 +134,8 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          find.descendant(
-            of: onboardingCheckbox,
-            matching: find.byIcon(Icons.check_rounded),
-          ),
-          findsOneWidget,
+          find.byKey(const Key('inbox-task-row-icvr-onboarding')),
+          findsNothing,
         );
         expect(
           find.textContaining('6 tasks', findRichText: true),
@@ -204,45 +202,26 @@ void main() {
     }
   });
 
-  testWidgets('uncompleting task restores focus spaces progress', (
-    WidgetTester tester,
-  ) async {
-    final semantics = tester.ensureSemantics();
-    try {
-      await tester.pumpWidget(const ProviderScope(child: LumiApp()));
-      await tester.pumpAndSettle();
+  test('toggling same task twice restores derived focus progress', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
 
-      final onboardingCheckbox = find.byKey(
-        const Key('inbox-task-checkbox-icvr-onboarding'),
-      );
-      await tester.ensureVisible(onboardingCheckbox);
-      await tester.pumpAndSettle();
-      await tester.tap(onboardingCheckbox);
-      await tester.pumpAndSettle();
+    final taskStore = container.read(lumiTasksProvider.notifier);
 
-      await tester.tap(find.byKey(const Key('bottom-bar-projects')));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('space-progress-icvr')), findsOneWidget);
-      expect(
-        tester.getSemantics(find.byKey(const Key('space-progress-icvr'))).value,
-        '2/3',
-      );
+    taskStore.toggleCompletion('icvr-onboarding');
+    var icvrSummary = container
+        .read(lumiSpaceSummariesProvider)
+        .firstWhere((summary) => summary.id == 'icvr');
+    expect(icvrSummary.completedTasks, 2);
+    expect(icvrSummary.openTasks, 1);
+    expect(icvrSummary.dueTodayTasks, 0);
 
-      await tester.tap(find.byKey(const Key('bottom-bar-inbox')));
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(onboardingCheckbox);
-      await tester.pumpAndSettle();
-      await tester.tap(onboardingCheckbox);
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(const Key('bottom-bar-projects')));
-      await tester.pumpAndSettle();
-      expect(
-        tester.getSemantics(find.byKey(const Key('space-progress-icvr'))).value,
-        '1/3',
-      );
-    } finally {
-      semantics.dispose();
-    }
+    taskStore.toggleCompletion('icvr-onboarding');
+    icvrSummary = container
+        .read(lumiSpaceSummariesProvider)
+        .firstWhere((summary) => summary.id == 'icvr');
+    expect(icvrSummary.completedTasks, 1);
+    expect(icvrSummary.openTasks, 2);
+    expect(icvrSummary.dueTodayTasks, 1);
   });
 }

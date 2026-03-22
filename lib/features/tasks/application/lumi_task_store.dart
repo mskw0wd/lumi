@@ -20,6 +20,7 @@ final inboxTaskItemsProvider = Provider<List<LumiInboxTaskItem>>((ref) {
   final spacesById = ref.watch(lumiSpacesByIdProvider);
 
   return tasks
+      .where((task) => !task.isCompleted)
       .map(
         (task) => LumiInboxTaskItem(
           id: task.id,

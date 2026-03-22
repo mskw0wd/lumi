@@ -50,6 +50,8 @@ class _InboxPageState extends ConsumerState<_InboxPageBody> {
     final textTheme = context.lumiTextTheme;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final overlayController = ref.read(appOverlayControllerProvider.notifier);
+    final taskItems = ref.watch(inboxTaskItemsProvider);
+    final taskStore = ref.read(lumiTasksProvider.notifier);
     final focusCount = ref.watch(inboxFocusCountProvider);
     const relativeDateLabel = 'Today';
     const absoluteDateLabel = 'Tue, March 16';
@@ -68,7 +70,11 @@ class _InboxPageState extends ConsumerState<_InboxPageBody> {
       bottom: false,
       child: AnimatedBuilder(
         animation: _scrollController,
-        child: _TaskPreviewList(controller: _scrollController),
+        child: _TaskPreviewList(
+          controller: _scrollController,
+          tasks: taskItems,
+          onToggleTask: taskStore.toggleCompletion,
+        ),
         builder: (context, child) {
           final offset = _scrollController.hasClients
               ? _scrollController.offset
@@ -203,11 +209,10 @@ class _InboxTaskRow extends StatelessWidget {
     final titleColor = task.isCompleted
         ? colors.contentSecondary
         : colors.contentPrimary;
-    final subtitleColor = task.isCompleted
-        ? colors.contentTertiary
-        : colors.contentSecondary;
+    final subtitleColor = colors.contentSecondary;
 
     return Padding(
+      key: Key('inbox-task-row-${task.id}'),
       padding: const EdgeInsets.symmetric(vertical: LumiSpacingTokens.space3),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -262,6 +267,7 @@ class _InboxTaskRow extends StatelessWidget {
                 const SizedBox(height: LumiSpacingTokens.space2),
                 Text(
                   task.subtitle,
+                  key: Key('inbox-task-subtitle-${task.id}'),
                   style: textTheme.bodySmall?.copyWith(
                     color: subtitleColor,
                     fontWeight: LumiTypographyTokens.medium,
@@ -413,17 +419,21 @@ class _DateSummaryBlock extends StatelessWidget {
   }
 }
 
-class _TaskPreviewList extends ConsumerWidget {
-  const _TaskPreviewList({required this.controller});
+class _TaskPreviewList extends StatelessWidget {
+  const _TaskPreviewList({
+    required this.controller,
+    required this.tasks,
+    required this.onToggleTask,
+  });
 
   final ScrollController controller;
+  final List<LumiInboxTaskItem> tasks;
+  final void Function(String taskId) onToggleTask;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final colors = context.lumiColors;
     final shapes = context.lumiShapes;
-    final tasks = ref.watch(inboxTaskItemsProvider);
-    final taskStore = ref.read(lumiTasksProvider.notifier);
 
     return Container(
       width: double.infinity,
@@ -444,7 +454,7 @@ class _TaskPreviewList extends ConsumerWidget {
           final task = tasks[index];
           return _InboxTaskRow(
             task: task,
-            onToggle: () => taskStore.toggleCompletion(task.id),
+            onToggle: () => onToggleTask(task.id),
           );
         },
       ),
